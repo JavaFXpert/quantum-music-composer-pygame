@@ -4,6 +4,8 @@ from pygame.locals import *
 import numpy as np
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 from qiskit import execute
+from qiskit import BasicAer
+from qiskit.tools.visualization import plot_state_qsphere
 
 cur_mel_midi_vals = [0, 0, 0, 0]
 
@@ -44,7 +46,6 @@ def update_circuit(dial_num, midi_val):
         mel_circ = createTransitionCircuit(cur_mel_midi_vals)
         mel_circ_drawing = mel_circ.draw(output='mpl')
 
-        # TODO: Ascertain whether these two steps may be skipped
         mel_circ_drawing.savefig("images/mel_circ.png")
         mel_circ_img = pygame.image.load("images/mel_circ.png")
 
@@ -53,6 +54,30 @@ def update_circuit(dial_num, midi_val):
         screen.fill(white)
         screen.blit(mel_circ_img, mel_circ_img_rect)
         pygame.display.flip()
+        return mel_circ
+
+
+def display_statevector(circ):
+    backend_sv_sim = BasicAer.get_backend('statevector_simulator')
+
+    # Execute the circuit on the state vector simulator
+    job_sim = execute(circ, backend_sv_sim)
+
+    # Grab the results from the job.
+    result_sim = job_sim.result()
+
+    # Obtain the state vector for the quantum circuit
+    quantum_state = result_sim.get_statevector(circ, decimals=3)
+    qsphere_drawing = plot_state_qsphere(quantum_state)
+
+    qsphere_drawing.savefig("images/mel_qsphere.png")
+    mel_qsphere_img = pygame.image.load("images/mel_qsphere.png")
+
+    mel_qsphere_img_rect = mel_qsphere_img.get_rect()
+
+    # screen.fill(white)
+    screen.blit(mel_qsphere_img, mel_qsphere_img_rect)
+    pygame.display.flip()
 
 
 def print_midi_device_info():
@@ -111,7 +136,8 @@ def input_main(device_id=None):
                 # print("midi_ev", midi_ev)
 
                 if midi_ev.status == 176 and index == len(midi_evs) - 1:
-                    update_circuit(midi_ev.data1, midi_ev.data2)
+                    melody_circ = update_circuit(midi_ev.data1, midi_ev.data2)
+                    display_statevector(melody_circ)
 
     del i
     pygame.midi.quit()
