@@ -7,10 +7,13 @@ from qiskit import execute
 from qiskit import BasicAer
 from qiskit.tools.visualization import plot_state_qsphere
 
+num_qubits = 4
+state_vector_len = num_qubits**2
 cur_mel_midi_vals = [0, 0, 0, 0]
 
-screen_size = width, height = 1024, 768
-white = 127, 127, 127
+screen_size = width, height = 1200, 768
+white = 255, 255, 255
+black = 0, 0, 0
 
 screen = pygame.display.set_mode(screen_size)
 
@@ -20,10 +23,11 @@ def createTransitionCircuit(midi_vals):
     qr = QuantumRegister(4)
 
     # Create a Classical Register with 1 bit (double wire).
-    cr = ClassicalRegister(4)
+    # cr = ClassicalRegister(4)
 
     # Create a Quantum Circuit from the quantum and classical registers
-    qc = QuantumCircuit(qr, cr)
+    # qc = QuantumCircuit(qr, cr)
+    qc = QuantumCircuit(qr)
 
     # Place X rotation gate on each wire
     qc.rx(midi_vals[0] * (np.pi / 64), qr[0])
@@ -31,10 +35,10 @@ def createTransitionCircuit(midi_vals):
     qc.rx(midi_vals[2] * (np.pi / 64), qr[2])
     qc.rx(midi_vals[3] * (np.pi / 64), qr[3])
 
-    qc.barrier(qr)
+    # qc.barrier(qr)
 
     # Measure the qubit into the classical register
-    qc.measure(qr, cr)
+    # qc.measure(qr, cr)
 
     return qc
 
@@ -44,12 +48,12 @@ def update_circuit(dial_num, midi_val):
         cur_mel_midi_vals[dial_num -1] = midi_val
         print("cur_mel_midi_vals: ", cur_mel_midi_vals)
         mel_circ = createTransitionCircuit(cur_mel_midi_vals)
-        mel_circ_drawing = mel_circ.draw(output='mpl')
 
+        mel_circ_drawing = mel_circ.draw(output='mpl')
         mel_circ_drawing.savefig("images/mel_circ.png")
         mel_circ_img = pygame.image.load("images/mel_circ.png")
-
         mel_circ_img_rect = mel_circ_img.get_rect()
+        mel_circ_img_rect.topleft = (0, 0)
 
         screen.fill(white)
         screen.blit(mel_circ_img, mel_circ_img_rect)
@@ -67,16 +71,53 @@ def display_statevector(circ):
     result_sim = job_sim.result()
 
     # Obtain the state vector for the quantum circuit
-    quantum_state = result_sim.get_statevector(circ, decimals=3)
-    qsphere_drawing = plot_state_qsphere(quantum_state)
+    # quantum_state = result_sim.get_statevector(circ, decimals=3)
+    # qsphere_drawing = plot_state_qsphere(quantum_state)
+    #
+    # qsphere_drawing.savefig("images/mel_qsphere.png")
+    # mel_qsphere_img = pygame.image.load("images/mel_qsphere.png")
+    #
+    # mel_qsphere_img_rect = mel_qsphere_img.get_rect()
+    # mel_qsphere_img_rect.topleft = (600, 0)
+    #
+    # # screen.fill(white)
+    # screen.blit(mel_qsphere_img, mel_qsphere_img_rect)
+    # pygame.display.flip()
 
-    qsphere_drawing.savefig("images/mel_qsphere.png")
-    mel_qsphere_img = pygame.image.load("images/mel_qsphere.png")
+def display_unitary(circ):
+    backend_unit_sim = BasicAer.get_backend('unitary_simulator')
 
-    mel_qsphere_img_rect = mel_qsphere_img.get_rect()
+    # Execute the circuit on the state vector simulator
+    job_sim = execute(circ, backend_unit_sim)
 
-    # screen.fill(white)
-    screen.blit(mel_qsphere_img, mel_qsphere_img_rect)
+    # Grab the results from the job.
+    result_sim = job_sim.result()
+
+    # Obtain the unitary for the quantum circuit
+    unitary = result_sim.get_unitary(circ, decimals=3)
+    # unitary = result_sim.get_unitary(circ)
+    print("Circuit unitary:\n", unitary)
+
+    block_size = 20
+    x_offset = 400
+    y_offset = 20
+    for y in range(state_vector_len):
+        for x in range(state_vector_len):
+            rect = pygame.Rect(x * block_size + x_offset,
+                               y * block_size + y_offset,
+                               block_size, block_size)
+            pygame.draw.rect(screen, black, rect, 1)
+
+    # qsphere_drawing = plot_state_qsphere(quantum_state)
+    #
+    # qsphere_drawing.savefig("images/mel_qsphere.png")
+    # mel_qsphere_img = pygame.image.load("images/mel_qsphere.png")
+    #
+    # mel_qsphere_img_rect = mel_qsphere_img.get_rect()
+    # mel_qsphere_img_rect.topleft = (600, 0)
+    #
+    # # screen.fill(white)
+    # screen.blit(mel_qsphere_img, mel_qsphere_img_rect)
     pygame.display.flip()
 
 
@@ -132,12 +173,10 @@ def input_main(device_id=None):
             midi_evs = pygame.midi.midis2events(midi_events, i.device_id)
 
             for index, midi_ev in enumerate(midi_evs):
-                # event_post(midi_ev)
-                # print("midi_ev", midi_ev)
-
                 if midi_ev.status == 176 and index == len(midi_evs) - 1:
                     melody_circ = update_circuit(midi_ev.data1, midi_ev.data2)
                     display_statevector(melody_circ)
+                    display_unitary(melody_circ)
 
     del i
     pygame.midi.quit()
@@ -145,27 +184,8 @@ def input_main(device_id=None):
 
 pygame.init()
 
-# size = width, height = 320, 240
-# speed = [2, 2]
-# black = 0, 0, 0
-#
-# screen = pygame.display.set_mode(size)
-#
-# ball = pygame.image.load("images/intro_ball.gif")
-# ballrect = ball.get_rect()
-
 input_main()
 
 while 1:
     for event in pygame.event.get():
         if event.type == pygame.QUIT: sys.exit()
-
-    # ballrect = ballrect.move(speed)
-    # if ballrect.left < 0 or ballrect.right > width:
-    #     speed[0] = -speed[0]
-    # if ballrect.top < 0 or ballrect.bottom > height:
-    #     speed[1] = -speed[1]
-    #
-    # screen.fill(black)
-    # screen.blit(ball, ballrect)
-    # pygame.display.flip()
