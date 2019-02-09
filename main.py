@@ -35,6 +35,9 @@ def createTransitionCircuit(midi_vals):
     qc.rx(midi_vals[2] * (np.pi / 64), qr[2])
     qc.rx(midi_vals[3] * (np.pi / 64), qr[3])
 
+    # qc.cu3(midi_vals[0] * (np.pi / 64),
+    #        midi_vals[1] * (np.pi / 64),
+    #        midi_vals[2] * (np.pi / 64), qr[0], qr[1])
     # qc.barrier(qr)
 
     # Measure the qubit into the classical register
@@ -46,18 +49,18 @@ def createTransitionCircuit(midi_vals):
 def update_circuit(dial_num, midi_val):
     if dial_num <= 4:
         cur_mel_midi_vals[dial_num -1] = midi_val
-        print("cur_mel_midi_vals: ", cur_mel_midi_vals)
+        # print("cur_mel_midi_vals: ", cur_mel_midi_vals)
         mel_circ = createTransitionCircuit(cur_mel_midi_vals)
 
-        mel_circ_drawing = mel_circ.draw(output='mpl')
-        mel_circ_drawing.savefig("images/mel_circ.png")
-        mel_circ_img = pygame.image.load("images/mel_circ.png")
-        mel_circ_img_rect = mel_circ_img.get_rect()
-        mel_circ_img_rect.topleft = (0, 0)
-
+        # mel_circ_drawing = mel_circ.draw(output='mpl')
+        # mel_circ_drawing.savefig("images/mel_circ.png")
+        # mel_circ_img = pygame.image.load("images/mel_circ.png")
+        # mel_circ_img_rect = mel_circ_img.get_rect()
+        # mel_circ_img_rect.topleft = (0, 0)
+        #
         screen.fill(white)
-        screen.blit(mel_circ_img, mel_circ_img_rect)
-        pygame.display.flip()
+        # screen.blit(mel_circ_img, mel_circ_img_rect)
+        # pygame.display.flip()
         return mel_circ
 
 
@@ -96,7 +99,7 @@ def display_unitary(circ):
     # Obtain the unitary for the quantum circuit
     unitary = result_sim.get_unitary(circ, decimals=3)
     # unitary = result_sim.get_unitary(circ)
-    print("Circuit unitary:\n", unitary)
+    # print("Circuit unitary:\n", unitary)
 
     block_size = 20
     x_offset = 400
@@ -105,8 +108,13 @@ def display_unitary(circ):
         for x in range(state_vector_len):
             rect = pygame.Rect(x * block_size + x_offset,
                                y * block_size + y_offset,
-                               block_size, block_size)
-            pygame.draw.rect(screen, black, rect, 1)
+                               abs(unitary[y][x]) * block_size,
+                               abs(unitary[y][x]) * block_size)
+            # rect = pygame.Rect(x * block_size + x_offset,
+            #                    y * block_size + y_offset,
+            #                    block_size, block_size)
+            if abs(unitary[y][x]) > 0:
+                pygame.draw.rect(screen, black, rect, 1)
 
     # qsphere_drawing = plot_state_qsphere(quantum_state)
     #
