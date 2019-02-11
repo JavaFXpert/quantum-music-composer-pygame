@@ -1,4 +1,5 @@
 import sys, pygame, pygame.midi
+from pygame.midi import time
 from pygame.locals import *
 
 import numpy as np
@@ -154,6 +155,7 @@ def input_main(device_id=None):
 
     print_midi_device_info()
 
+    device_id = 1
     if device_id is None:
         input_id = pygame.midi.get_default_input_id()
     else:
@@ -162,10 +164,28 @@ def input_main(device_id=None):
     print("using input_id :%s:" % input_id)
     i = pygame.midi.Input(input_id)
 
+    # sending midi to the output
+    output_id = pygame.midi.get_default_output_id()
+    print("using output_id :%s:" % output_id)
+    midi_output = pygame.midi.Output(output_id)
+    midi_output.set_instrument(2)
+
+
+    # end of sending midi to output
+
+
+
     update_circuit(1, 0)
 
+    beg_time = time()
+    recent_note_time = beg_time
     going = True
     while going:
+        if time() > recent_note_time:
+            recent_note_time += 1000
+            midi_output.write([[[0x90, 62, 127], recent_note_time],
+                               [[0x90, 62, 0], recent_note_time + 1000]])
+
         events = event_get()
         for e in events:
             if e.type in [QUIT]:
