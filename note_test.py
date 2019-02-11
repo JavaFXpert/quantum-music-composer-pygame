@@ -17,7 +17,7 @@ def print_midi_device_info():
 
 pygame.midi.init()
 print_midi_device_info()
-player = pygame.midi.Output(2, 1, 1000)
+player = pygame.midi.Output(3, 1, 1000)
 player.set_instrument(3)
 
 # player.note_on(64, 127)

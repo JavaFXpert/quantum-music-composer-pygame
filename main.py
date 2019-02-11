@@ -21,10 +21,10 @@ screen = pygame.display.set_mode(screen_size)
 
 def createTransitionCircuit(midi_vals):
     # Create a Quantum Register with 1 qubit (wire).
-    qr = QuantumRegister(4)
+    qr = QuantumRegister(4, 'q_reg')
 
     # Create a Classical Register with 1 bit (double wire).
-    cr = ClassicalRegister(4)
+    cr = ClassicalRegister(4, 'c_reg')
 
     # Create a Quantum Circuit from the quantum and classical registers
     qc = QuantumCircuit(qr, cr)
@@ -135,14 +135,41 @@ def measure_circuit(circ):
     from qiskit import BasicAer
     backend_sim = BasicAer.get_backend('qasm_simulator')
 
+    # Create a Quantum Register with 4 qubits
+    qr = QuantumRegister(4, 'q_reg')
+
+    # Create a Classical Register with 4 bits
+    cr = ClassicalRegister(4, 'c_reg')
+
+    # Create the measurement portion of a quantum circuit
+    meas_circ = QuantumCircuit(qr, cr)
+
+    # Create a barrier that separates the gates from the measurements
+    meas_circ.barrier(qr)
+
+    # Measure the qubits into the classical registers
+    meas_circ.measure(qr, cr)
+
+    # Add the measument circuit to the original circuit
+    complete_circuit = circ + meas_circ
+
+    # mel_circ_drawing = complete_circuit.draw(output='mpl')
+    # mel_circ_drawing.savefig("images/mel_circ.png")
+    # mel_circ_img = pygame.image.load("images/mel_circ.png")
+    # mel_circ_img_rect = mel_circ_img.get_rect()
+    # mel_circ_img_rect.topleft = (0, 0)
+    # screen.fill(white)
+    # screen.blit(mel_circ_img, mel_circ_img_rect)
+    # pygame.display.flip()
+
     # Execute the circuit on the qasm simulator, running it 1000 times.
-    job_sim = execute(circ, backend_sim, shots=1)
+    job_sim = execute(complete_circuit, backend_sim, shots=1)
 
     # Grab the results from the job.
     result_sim = job_sim.result()
 
     # Print the counts, which are contained in a Python dictionary
-    counts = result_sim.get_counts(circ)
+    counts = result_sim.get_counts(complete_circuit)
     print(counts)
 
 def print_midi_device_info():
@@ -170,7 +197,7 @@ def input_main(device_id=None):
 
     print_midi_device_info()
 
-    device_id = 1
+    device_id = 0
     if device_id is None:
         input_id = pygame.midi.get_default_input_id()
     else:
@@ -187,14 +214,14 @@ def input_main(device_id=None):
 
     # end of sending midi to output
 
-    circ = update_circuit(1, 0)
+    melody_circ = update_circuit(1, 0)
 
     beg_time = time()
     recent_note_time = beg_time
     going = True
     while going:
         if time() > recent_note_time:
-            measure_circuit(circ)
+            measure_circuit(melody_circ)
             recent_note_time += 1000
             midi_output.write([[[0x90, 62, 127], recent_note_time],
                                [[0x90, 62, 0], recent_note_time + 1000]])
