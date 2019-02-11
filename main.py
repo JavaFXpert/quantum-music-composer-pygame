@@ -24,11 +24,11 @@ def createTransitionCircuit(midi_vals):
     qr = QuantumRegister(4)
 
     # Create a Classical Register with 1 bit (double wire).
-    # cr = ClassicalRegister(4)
+    cr = ClassicalRegister(4)
 
     # Create a Quantum Circuit from the quantum and classical registers
-    # qc = QuantumCircuit(qr, cr)
-    qc = QuantumCircuit(qr)
+    qc = QuantumCircuit(qr, cr)
+    # qc = QuantumCircuit(qr)
 
     # Place X rotation gate on each wire
     qc.rx(midi_vals[0] * (np.pi / 64), qr[0])
@@ -130,6 +130,21 @@ def display_unitary(circ):
     pygame.display.flip()
 
 
+def measure_circuit(circ):
+    # Use the BasicAer qasm_simulator backend
+    from qiskit import BasicAer
+    backend_sim = BasicAer.get_backend('qasm_simulator')
+
+    # Execute the circuit on the qasm simulator, running it 1000 times.
+    job_sim = execute(circ, backend_sim, shots=1)
+
+    # Grab the results from the job.
+    result_sim = job_sim.result()
+
+    # Print the counts, which are contained in a Python dictionary
+    counts = result_sim.get_counts(circ)
+    print(counts)
+
 def print_midi_device_info():
     for i in range(pygame.midi.get_count()):
         r = pygame.midi.get_device_info(i)
@@ -170,18 +185,16 @@ def input_main(device_id=None):
     midi_output = pygame.midi.Output(output_id)
     midi_output.set_instrument(2)
 
-
     # end of sending midi to output
 
-
-
-    update_circuit(1, 0)
+    circ = update_circuit(1, 0)
 
     beg_time = time()
     recent_note_time = beg_time
     going = True
     while going:
         if time() > recent_note_time:
+            measure_circuit(circ)
             recent_note_time += 1000
             midi_output.write([[[0x90, 62, 127], recent_note_time],
                                [[0x90, 62, 0], recent_note_time + 1000]])
