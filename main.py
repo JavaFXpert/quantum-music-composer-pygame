@@ -7,6 +7,7 @@ from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 from qiskit import execute
 from qiskit import BasicAer
 from qiskit.tools.visualization import plot_state_qsphere
+from qiskit.tools.visualization import plot_histogram
 
 num_qubits = 4
 state_vector_len = num_qubits**2
@@ -145,7 +146,11 @@ def measure_circuit(circ, initial_bit_str):
 
     for bit_idx in range(0, num_qubits):
         if int(initial_bit_str[bit_idx]) == 1:
-            circ.x(init_qr[num_qubits - bit_idx - 1])
+            init_circ.x(init_qr[num_qubits - bit_idx - 1])
+        else:
+            init_circ.iden(init_qr[num_qubits - bit_idx - 1])
+
+    init_circ.barrier(init_qr)
 
     # Create a Quantum Register with 4 qubits
     qr = QuantumRegister(4, 'q_reg')
@@ -165,14 +170,14 @@ def measure_circuit(circ, initial_bit_str):
     # Add the measument circuit to the original circuit
     complete_circuit = init_circ + circ + meas_circ
 
-    # mel_circ_drawing = complete_circuit.draw(output='mpl')
-    # mel_circ_drawing.savefig("images/mel_circ.png")
-    # mel_circ_img = pygame.image.load("images/mel_circ.png")
-    # mel_circ_img_rect = mel_circ_img.get_rect()
-    # mel_circ_img_rect.topleft = (0, 0)
-    # screen.fill(white)
-    # screen.blit(mel_circ_img, mel_circ_img_rect)
-    # pygame.display.flip()
+    mel_circ_drawing = complete_circuit.draw(output='mpl')
+    mel_circ_drawing.savefig("images/mel_circ.png")
+    mel_circ_img = pygame.image.load("images/mel_circ.png")
+    mel_circ_img_rect = mel_circ_img.get_rect()
+    mel_circ_img_rect.topleft = (0, 0)
+    screen.fill(white)
+    screen.blit(mel_circ_img, mel_circ_img_rect)
+    pygame.display.flip()
 
     # Execute the circuit on the qasm simulator, running it 1000 times.
     job_sim = execute(complete_circuit, backend_sim, shots=1)
@@ -186,6 +191,7 @@ def measure_circuit(circ, initial_bit_str):
     basis_state_str = list(counts.keys())[0]
     # print ("basis_state_str: ", basis_state_str)
     return basis_state_str
+
 
 def print_midi_device_info():
     for i in range(pygame.midi.get_count()):
