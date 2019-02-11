@@ -13,11 +13,12 @@ num_qubits = 4
 state_vector_len = num_qubits**2
 cur_mel_midi_vals = [0, 0, 0, 0]
 
-screen_size = width, height = 1200, 768
+screen_size = width, height = 1400, 900
 white = 255, 255, 255
 black = 0, 0, 0
 
 screen = pygame.display.set_mode(screen_size)
+screen.fill(white)
 
 
 def createTransitionCircuit(midi_vals):
@@ -25,11 +26,11 @@ def createTransitionCircuit(midi_vals):
     qr = QuantumRegister(4, 'q_reg')
 
     # Create a Classical Register with 1 bit (double wire).
-    cr = ClassicalRegister(4, 'c_reg')
+    # cr = ClassicalRegister(4, 'c_reg')
 
     # Create a Quantum Circuit from the quantum and classical registers
-    qc = QuantumCircuit(qr, cr)
-    # qc = QuantumCircuit(qr)
+    # qc = QuantumCircuit(qr, cr)
+    qc = QuantumCircuit(qr)
 
     # Place X rotation gate on each wire
     qc.rx(midi_vals[0] * (np.pi / 64), qr[0])
@@ -50,7 +51,7 @@ def createTransitionCircuit(midi_vals):
 
 def update_circuit(dial_num, midi_val):
     if dial_num <= 4:
-        cur_mel_midi_vals[dial_num -1] = midi_val
+        cur_mel_midi_vals[num_qubits - dial_num] = midi_val
         # print("cur_mel_midi_vals: ", cur_mel_midi_vals)
         mel_circ = createTransitionCircuit(cur_mel_midi_vals)
 
@@ -60,7 +61,7 @@ def update_circuit(dial_num, midi_val):
         # mel_circ_img_rect = mel_circ_img.get_rect()
         # mel_circ_img_rect.topleft = (0, 0)
         #
-        screen.fill(white)
+        # screen.fill(white)
         # screen.blit(mel_circ_img, mel_circ_img_rect)
         # pygame.display.flip()
         return mel_circ
@@ -103,9 +104,11 @@ def display_unitary(circ):
     # unitary = result_sim.get_unitary(circ)
     # print("Circuit unitary:\n", unitary)
 
+    screen.fill(white)
+
     block_size = 20
-    x_offset = 400
-    y_offset = 20
+    x_offset = 600
+    y_offset = 100
     for y in range(state_vector_len):
         for x in range(state_vector_len):
             rect = pygame.Rect(x * block_size + x_offset,
@@ -126,7 +129,7 @@ def display_unitary(circ):
     # mel_qsphere_img_rect = mel_qsphere_img.get_rect()
     # mel_qsphere_img_rect.topleft = (600, 0)
     #
-    # # screen.fill(white)
+    # screen.fill(white)
     # screen.blit(mel_qsphere_img, mel_qsphere_img_rect)
     pygame.display.flip()
 
@@ -140,9 +143,10 @@ def measure_circuit(circ, initial_bit_str):
     init_qr = QuantumRegister(4, 'q_reg')
 
     # TODO: Ascertain if necessary to create classical registers for the circuit merge
-    init_cr = ClassicalRegister(4, 'c_reg')
+    # init_cr = ClassicalRegister(4, 'c_reg')
 
-    init_circ = QuantumCircuit(init_qr, init_cr)
+    # init_circ = QuantumCircuit(init_qr, init_cr)
+    init_circ = QuantumCircuit(init_qr)
 
     for bit_idx in range(0, num_qubits):
         if int(initial_bit_str[bit_idx]) == 1:
@@ -170,12 +174,12 @@ def measure_circuit(circ, initial_bit_str):
     # Add the measument circuit to the original circuit
     complete_circuit = init_circ + circ + meas_circ
 
-    mel_circ_drawing = complete_circuit.draw(output='mpl')
+    mel_circ_drawing = (init_circ + circ).draw(output='mpl')
     mel_circ_drawing.savefig("images/mel_circ.png")
     mel_circ_img = pygame.image.load("images/mel_circ.png")
     mel_circ_img_rect = mel_circ_img.get_rect()
     mel_circ_img_rect.topleft = (0, 0)
-    screen.fill(white)
+    # screen.fill(white)
     screen.blit(mel_circ_img, mel_circ_img_rect)
     pygame.display.flip()
 
