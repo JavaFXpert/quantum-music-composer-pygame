@@ -20,7 +20,7 @@ screen = pygame.display.set_mode(screen_size)
 
 
 def createTransitionCircuit(midi_vals):
-    # Create a Quantum Register with 1 qubit (wire).
+    # Create a Quantum Register with 4 qubit (wire).
     qr = QuantumRegister(4, 'q_reg')
 
     # Create a Classical Register with 1 bit (double wire).
@@ -130,10 +130,22 @@ def display_unitary(circ):
     pygame.display.flip()
 
 
-def measure_circuit(circ):
+def measure_circuit(circ, initial_bit_str):
     # Use the BasicAer qasm_simulator backend
     from qiskit import BasicAer
     backend_sim = BasicAer.get_backend('qasm_simulator')
+
+    # Initialize each wire
+    init_qr = QuantumRegister(4, 'q_reg')
+
+    # TODO: Ascertain if necessary to create classical registers for the circuit merge
+    init_cr = ClassicalRegister(4, 'c_reg')
+
+    init_circ = QuantumCircuit(init_qr, init_cr)
+
+    for bit_idx in range(0, num_qubits):
+        if int(initial_bit_str[bit_idx]) == 1:
+            circ.x(init_qr[num_qubits - bit_idx - 1])
 
     # Create a Quantum Register with 4 qubits
     qr = QuantumRegister(4, 'q_reg')
@@ -151,7 +163,7 @@ def measure_circuit(circ):
     meas_circ.measure(qr, cr)
 
     # Add the measument circuit to the original circuit
-    complete_circuit = circ + meas_circ
+    complete_circuit = init_circ + circ + meas_circ
 
     # mel_circ_drawing = complete_circuit.draw(output='mpl')
     # mel_circ_drawing.savefig("images/mel_circ.png")
@@ -217,6 +229,7 @@ def input_main(device_id=None):
 
     # end of sending midi to output
 
+    bit_str_meas = '0000'
     melody_circ = update_circuit(1, 0)
 
     beg_time = time()
@@ -224,10 +237,11 @@ def input_main(device_id=None):
     going = True
     while going:
         if time() > recent_note_time:
-            measure_circuit(melody_circ)
+            bit_str_meas = measure_circuit(melody_circ, bit_str_meas)
             recent_note_time += 1000
             midi_output.write([[[0x90, 62, 127], recent_note_time],
                                [[0x90, 62, 0], recent_note_time + 1000]])
+            melody_circ = createTransitionCircuit(cur_mel_midi_vals)
 
         events = event_get()
         for e in events:
