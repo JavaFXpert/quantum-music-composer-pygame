@@ -171,7 +171,7 @@ def measure_circuit(circ, initial_bit_str):
     # Measure the qubits into the classical registers
     meas_circ.measure(qr, cr)
 
-    # Add the measument circuit to the original circuit
+    # Add the measurement circuit to the original circuit
     complete_circuit = init_circ + circ + meas_circ
 
     mel_circ_drawing = (init_circ + circ).draw(output='mpl')
@@ -211,6 +211,10 @@ def print_midi_device_info():
               (i, interf, name, opened, in_out))
 
 
+def compute_pitch_by_bitstr(bitstr):
+    pitches = [60,62,64,65,67,69,71,72,74,76,77,79,81,83,84,86]
+    return pitches[int(bitstr, 2)]
+
 def input_main(device_id=None):
     # pygame.init()
     pygame.fastevent.init()
@@ -248,12 +252,15 @@ def input_main(device_id=None):
     while going:
         if time() > recent_note_time:
             bit_str_meas = measure_circuit(melody_circ, bit_str_meas)
-            int_meas = int(bit_str_meas, 2)
-            recent_note_time += 1000
+
+            # pitch_meas = int(bit_str_meas, 2)
+            pitch_meas = compute_pitch_by_bitstr(bit_str_meas)
+
+            recent_note_time += 500
             # midi_output.write([[[0x90, 62, 127], recent_note_time],
             #                    [[0x90, 62, 0], recent_note_time + 2000]])
-            midi_output.write([[[0x90, 60 + int_meas, 127], recent_note_time],
-                               [[0x90, 60 + int_meas, 0], recent_note_time + 2000]])
+            midi_output.write([[[0x90, pitch_meas, 127], recent_note_time],
+                               [[0x90, pitch_meas, 0], recent_note_time + 500]])
             melody_circ = createTransitionCircuit(cur_mel_midi_vals)
 
         events = event_get()
