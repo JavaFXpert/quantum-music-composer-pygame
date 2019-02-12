@@ -179,7 +179,6 @@ def measure_circuit(circ, initial_bit_str):
     mel_circ_img = pygame.image.load("images/mel_circ.png")
     mel_circ_img_rect = mel_circ_img.get_rect()
     mel_circ_img_rect.topleft = (0, 0)
-    # screen.fill(white)
     screen.blit(mel_circ_img, mel_circ_img_rect)
     pygame.display.flip()
 
@@ -228,6 +227,7 @@ def input_main(device_id=None):
     else:
         input_id = device_id
 
+    input_id = 1
     print("using input_id :%s:" % input_id)
     i = pygame.midi.Input(input_id)
 
@@ -235,7 +235,7 @@ def input_main(device_id=None):
     output_id = pygame.midi.get_default_output_id()
     print("using output_id :%s:" % output_id)
     midi_output = pygame.midi.Output(output_id)
-    midi_output.set_instrument(2)
+    midi_output.set_instrument(0)
 
     # end of sending midi to output
 
@@ -248,9 +248,12 @@ def input_main(device_id=None):
     while going:
         if time() > recent_note_time:
             bit_str_meas = measure_circuit(melody_circ, bit_str_meas)
+            int_meas = int(bit_str_meas, 2)
             recent_note_time += 1000
-            midi_output.write([[[0x90, 62, 127], recent_note_time],
-                               [[0x90, 62, 0], recent_note_time + 1000]])
+            # midi_output.write([[[0x90, 62, 127], recent_note_time],
+            #                    [[0x90, 62, 0], recent_note_time + 2000]])
+            midi_output.write([[[0x90, 60 + int_meas, 127], recent_note_time],
+                               [[0x90, 60 + int_meas, 0], recent_note_time + 2000]])
             melody_circ = createTransitionCircuit(cur_mel_midi_vals)
 
         events = event_get()
