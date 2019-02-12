@@ -9,6 +9,9 @@ from qiskit import BasicAer
 from qiskit.tools.visualization import plot_state_qsphere
 from qiskit.tools.visualization import plot_histogram
 
+pygame.init()
+pygame.font.init()
+
 num_qubits = 4
 state_vector_len = num_qubits**2
 cur_mel_midi_vals = [0, 0, 0, 0]
@@ -16,13 +19,16 @@ cur_mel_midi_vals = [0, 0, 0, 0]
 cur_melody_circuit = None
 cur_unitary = np.eye(2**num_qubits)
 
-screen_size = width, height = 1400, 900
+pitch_labels = ["C","D","E","F","G","A","B","c","d","e","f","g","a","b","c'","d'"]
+
+screen_size = width, height = 600, 600
 white = 255, 255, 255
 black = 0, 0, 0
 
 screen = pygame.display.set_mode(screen_size)
 screen.fill(white)
 
+font = pygame.font.SysFont('Arial', 30)
 
 def createTransitionCircuit(midi_vals):
     # Create a Quantum Register with 4 qubit (wire).
@@ -112,13 +118,17 @@ def display_unitary(circ):
 
     screen.fill(white)
 
-    block_size = 20
-    x_offset = 600
-    y_offset = 100
+    block_size = 30
+    x_offset = 50
+    y_offset = 50
     for y in range(state_vector_len):
+        text_surface = font.render(pitch_labels[y], False, (0, 0, 0))
+        screen.blit(text_surface,(x_offset, (y + 1) * block_size + y_offset))
         for x in range(state_vector_len):
-            rect = pygame.Rect(x * block_size + x_offset,
-                               y * block_size + y_offset,
+            text_surface = font.render(pitch_labels[x], False, (0, 0, 0))
+            screen.blit(text_surface, ((x + 1) * block_size + x_offset, y_offset))
+            rect = pygame.Rect((x + 1) * block_size + x_offset,
+                               (y + 1) * block_size + y_offset,
                                abs(cur_unitary[y][x]) * block_size,
                                abs(cur_unitary[y][x]) * block_size)
             # rect = pygame.Rect(x * block_size + x_offset,
@@ -137,18 +147,22 @@ def display_unitary(circ):
     #
     # screen.fill(white)
     # screen.blit(mel_qsphere_img, mel_qsphere_img_rect)
-    # pygame.display.flip()
+    pygame.display.flip()
 
 
 def highlight_measured_state(init_bit_str, meas_bit_str):
     screen.fill(white)
-    block_size = 20
-    x_offset = 600
-    y_offset = 100
+    block_size = 30
+    x_offset = 50
+    y_offset = 50
     for y in range(state_vector_len):
+        text_surface = font.render(pitch_labels[y], False, (0, 0, 0))
+        screen.blit(text_surface,(x_offset, (y + 1) * block_size + y_offset))
         for x in range(state_vector_len):
-            rect = pygame.Rect(x * block_size + x_offset,
-                               y * block_size + y_offset,
+            text_surface = font.render(pitch_labels[x], False, (0, 0, 0))
+            screen.blit(text_surface, ((x + 1) * block_size + x_offset, y_offset))
+            rect = pygame.Rect((x + 1) * block_size + x_offset,
+                               (y + 1) * block_size + y_offset,
                                abs(cur_unitary[y][x]) * block_size,
                                abs(cur_unitary[y][x]) * block_size)
             # rect = pygame.Rect(x * block_size + x_offset,
@@ -242,10 +256,12 @@ def print_midi_device_info():
 
 def compute_pitch_by_bitstr(bitstr):
     pitches = [60,62,64,65,67,69,71,72,74,76,77,79,81,83,84,86]
+    # pitches = [60,61,62,63,64,65,66,67,68,69,70,71,72,73,74,75]
+    # pitches = [60,63,65,67,70,72,75,77,79,82,84,86,89,91,93,96]
+    # pitches = [36,40,43,48,52,55,60,64,67,72,76,79,84,88,91,96]
     return pitches[int(bitstr, 2)]
 
 def input_main(device_id=None):
-    # pygame.init()
     pygame.fastevent.init()
     event_get = pygame.fastevent.get
     event_post = pygame.fastevent.post
@@ -285,13 +301,9 @@ def input_main(device_id=None):
             # pitch_meas = int(bit_str_meas, 2)
             pitch_meas = compute_pitch_by_bitstr(bit_str_meas)
 
-            recent_note_time += 250
-            # midi_output.write([[[0x90, 62, 127], recent_note_time],
-            #                    [[0x90, 62, 0], recent_note_time + 2000]])
-            # midi_output.write([[[0x90, pitch_meas, 127], recent_note_time],
-            #                    [[0x90, pitch_meas, 0], recent_note_time + 500]])
+            recent_note_time += 500
             midi_output.write([[[0x90, pitch_meas, 127], recent_note_time + 0],
-                               [[0x90, pitch_meas, 0], recent_note_time + 250]])
+                               [[0x90, pitch_meas, 0], recent_note_time + 500]])
             melody_circ = createTransitionCircuit(cur_mel_midi_vals)
 
         events = event_get()
@@ -309,7 +321,7 @@ def input_main(device_id=None):
             midi_evs = pygame.midi.midis2events(midi_events, i.device_id)
 
             for index, midi_ev in enumerate(midi_evs):
-                if midi_ev.status == 176 and index == len(midi_evs) - 1:
+                if midi_ev.status == 176 and index == len(midi_evs) - 1 and midi_ev.data1 <= num_qubits:
                     melody_circ = update_circuit(midi_ev.data1, midi_ev.data2)
                     display_statevector(melody_circ)
                     display_unitary(melody_circ)
