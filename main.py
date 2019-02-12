@@ -159,7 +159,7 @@ def highlight_measured_state(init_bit_str, meas_bit_str):
             if y == int(init_bit_str, 2) and x == int(meas_bit_str, 2):
                 pygame.draw.rect(screen, black, rect, 5)
 
-    # pygame.display.flip()
+    pygame.display.flip()
 
 def measure_circuit(circ, initial_bit_str):
     # Use the BasicAer qasm_simulator backend
@@ -201,13 +201,13 @@ def measure_circuit(circ, initial_bit_str):
     # Add the measurement circuit to the original circuit
     complete_circuit = init_circ + circ + meas_circ
 
-    mel_circ_drawing = (init_circ + circ).draw(output='mpl')
-    mel_circ_drawing.savefig("images/mel_circ.png")
-    mel_circ_img = pygame.image.load("images/mel_circ.png")
-    mel_circ_img_rect = mel_circ_img.get_rect()
-    mel_circ_img_rect.topleft = (0, 0)
-    screen.blit(mel_circ_img, mel_circ_img_rect)
-    pygame.display.flip()
+    # mel_circ_drawing = (init_circ + circ).draw(output='mpl')
+    # mel_circ_drawing.savefig("images/mel_circ.png")
+    # mel_circ_img = pygame.image.load("images/mel_circ.png")
+    # mel_circ_img_rect = mel_circ_img.get_rect()
+    # mel_circ_img_rect.topleft = (0, 0)
+    # screen.blit(mel_circ_img, mel_circ_img_rect)
+    # pygame.display.flip()
 
     # Execute the circuit on the qasm simulator, running it 1000 times.
     job_sim = execute(complete_circuit, backend_sim, shots=1)
@@ -285,11 +285,13 @@ def input_main(device_id=None):
             # pitch_meas = int(bit_str_meas, 2)
             pitch_meas = compute_pitch_by_bitstr(bit_str_meas)
 
-            recent_note_time += 500
+            recent_note_time += 250
             # midi_output.write([[[0x90, 62, 127], recent_note_time],
             #                    [[0x90, 62, 0], recent_note_time + 2000]])
-            midi_output.write([[[0x90, pitch_meas, 127], recent_note_time],
-                               [[0x90, pitch_meas, 0], recent_note_time + 500]])
+            # midi_output.write([[[0x90, pitch_meas, 127], recent_note_time],
+            #                    [[0x90, pitch_meas, 0], recent_note_time + 500]])
+            midi_output.write([[[0x90, pitch_meas, 127], recent_note_time + 0],
+                               [[0x90, pitch_meas, 0], recent_note_time + 250]])
             melody_circ = createTransitionCircuit(cur_mel_midi_vals)
 
         events = event_get()
