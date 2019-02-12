@@ -13,6 +13,9 @@ num_qubits = 4
 state_vector_len = num_qubits**2
 cur_mel_midi_vals = [0, 0, 0, 0]
 
+cur_melody_circuit = None
+cur_unitary = np.eye(2**num_qubits)
+
 screen_size = width, height = 1400, 900
 white = 255, 255, 255
 black = 0, 0, 0
@@ -46,6 +49,8 @@ def createTransitionCircuit(midi_vals):
     # Measure the qubit into the classical register
     # qc.measure(qr, cr)
 
+    global cur_melody_circuit
+    cur_melody_circuit = qc
     return qc
 
 
@@ -100,7 +105,8 @@ def display_unitary(circ):
     result_sim = job_sim.result()
 
     # Obtain the unitary for the quantum circuit
-    unitary = result_sim.get_unitary(circ, decimals=3)
+    global cur_unitary
+    cur_unitary = result_sim.get_unitary(circ, decimals=3)
     # unitary = result_sim.get_unitary(circ)
     # print("Circuit unitary:\n", unitary)
 
@@ -113,12 +119,12 @@ def display_unitary(circ):
         for x in range(state_vector_len):
             rect = pygame.Rect(x * block_size + x_offset,
                                y * block_size + y_offset,
-                               abs(unitary[y][x]) * block_size,
-                               abs(unitary[y][x]) * block_size)
+                               abs(cur_unitary[y][x]) * block_size,
+                               abs(cur_unitary[y][x]) * block_size)
             # rect = pygame.Rect(x * block_size + x_offset,
             #                    y * block_size + y_offset,
             #                    block_size, block_size)
-            if abs(unitary[y][x]) > 0:
+            if abs(cur_unitary[y][x]) > 0:
                 pygame.draw.rect(screen, black, rect, 1)
 
     # qsphere_drawing = plot_state_qsphere(quantum_state)
@@ -131,8 +137,29 @@ def display_unitary(circ):
     #
     # screen.fill(white)
     # screen.blit(mel_qsphere_img, mel_qsphere_img_rect)
-    pygame.display.flip()
+    # pygame.display.flip()
 
+
+def highlight_measured_state(init_bit_str, meas_bit_str):
+    screen.fill(white)
+    block_size = 20
+    x_offset = 600
+    y_offset = 100
+    for y in range(state_vector_len):
+        for x in range(state_vector_len):
+            rect = pygame.Rect(x * block_size + x_offset,
+                               y * block_size + y_offset,
+                               abs(cur_unitary[y][x]) * block_size,
+                               abs(cur_unitary[y][x]) * block_size)
+            # rect = pygame.Rect(x * block_size + x_offset,
+            #                    y * block_size + y_offset,
+            #                    block_size, block_size)
+            if abs(cur_unitary[y][x]) > 0:
+                pygame.draw.rect(screen, black, rect, 1)
+            if y == int(init_bit_str, 2) and x == int(meas_bit_str, 2):
+                pygame.draw.rect(screen, black, rect, 5)
+
+    # pygame.display.flip()
 
 def measure_circuit(circ, initial_bit_str):
     # Use the BasicAer qasm_simulator backend
@@ -193,6 +220,8 @@ def measure_circuit(circ, initial_bit_str):
     print(counts)
     basis_state_str = list(counts.keys())[0]
     # print ("basis_state_str: ", basis_state_str)
+
+    highlight_measured_state(initial_bit_str, basis_state_str)
     return basis_state_str
 
 
